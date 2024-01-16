@@ -4,11 +4,9 @@ const cors = require("cors");
 const dotenv = require("dotenv").config();
 const bodyParser = require('body-parser');
 // const User = require('./models/User');
-
-
-
-// const transactionRoutes = require('./routes/transactionRoutes');
-// const userRoutes = require('./routes/userRoutes');
+const productRoutes = require('./routes/productRoute');
+const cartRoutes = require('./routes/cartRoute');
+const orderRoutes = require('./routes/orderRoute');
 
 
 const app = express();
@@ -47,5 +45,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
   });
 
 
+app.use('/cart', cartRoutes);
+app.use('/products', productRoutes);
+app.use('/order', orderRoutes);
 
-//   app.use('/users' , userRoutes);

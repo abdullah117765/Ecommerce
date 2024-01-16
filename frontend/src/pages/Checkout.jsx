@@ -1,51 +1,69 @@
-// Checkout.js
-
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
+import axios from 'axios';
 import L1 from '../resources/L1.jpeg';
 import M1 from '../resources/M1.jpg';
-import {  useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+
 const Checkout = () => {
-    const navigate = useNavigate();
-    const [shippingInfo, setShippingInfo] = useState({
-      name: '',
-      address: '',
-      city: '',
-      postalCode: '',
-    });
-  
-    const [cartItems] = useState([
-      {
-        id: 1,
-        name: 'Laptop A',
-        description: 'Powerful laptop with high-performance features.',
-        price: 1200,
-        image: L1,
-        quantity: 2,
-      },
-      {
-        id: 4,
-        name: 'Mobile X',
-        description: 'Feature-rich smartphone with a stunning display.',
-        price: 600,
-        image: M1,
-        quantity: 1,
-      },
-    ]);
-  
-    const calculateTotalPrice = () => {
-      return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const navigate = useNavigate();
+  const [shippingInfo, setShippingInfo] = useState({
+    name: '',
+    address: '',
+    city: '',
+    postalCode: '',
+  });
+
+ 
+  const [cartItems, setCartItems] = useState([]);
+
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/cart/get');
+       
+        setCartItems(response.data);
+      } catch (error) {
+        console.error('Error fetching cart items:', error);
+      }
     };
-  
-    const handleInputChange = (e) => {
-      const { name, value } = e.target;
-      setShippingInfo((prevInfo) => ({ ...prevInfo, [name]: value }));
-    };
-  
-    const handlePlaceOrder = () => {
-     
-      console.log('Order placed:', { shippingInfo, cartItems });
-      navigate('/thankyou')
-    };
+
+    fetchCartItems();
+  }, []);
+
+
+  const calculateTotalPrice = () => {
+    return cartItems.reduce((total, item) => total + item.productId.price * item.quantity, 0);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setShippingInfo((prevInfo) => ({ ...prevInfo, [name]: value }));
+  };
+
+  const handlePlaceOrder = async () => {
+    try {
+      // Prepare data to send to the backend
+      const orderData = {
+        shippingInfo,
+        items: cartItems.map((item) => ({
+          productId: item.id, // Assuming the product id matches the backend
+          quantity: item.quantity,
+          price: item.productId.price,
+          rating: '',
+      comment: '',
+        })),
+        totalPrice: calculateTotalPrice(),
+      };
+
+      // Make an Axios request to place the order
+      const response = await axios.post('http://localhost:3001/order/placeorder', orderData);
+
+      console.log('Order placed:', response.data);
+      navigate('/thankyou');
+    } catch (error) {
+      console.error('Error placing order:', error);
+    }
+  };
 
   return (
     <div className="container mx-auto my-8">
@@ -109,12 +127,12 @@ const Checkout = () => {
               <div className="flex items-center">
                 <img
                   src={item.image}
-                  alt={item.name}
+                  alt={item.productId.name}
                   className="rounded-md w-8 h-8 object-cover mr-2"
                 />
-                <span>{item.name}</span>
+                <span>{item.productId.name}</span>
               </div>
-              <span className="text-gray-800">{item.quantity} x ${item.price}</span>
+              <span className="text-gray-800">{item.productId.quantity} x ${item.productId.price}</span>
             </li>
           ))}
         </ul>

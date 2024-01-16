@@ -7,8 +7,8 @@ const Navbar = () => {
   return (
     <nav className="bg-blue-500 p-4">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-white text-xl font-semibold">
-          Shandar Mobile 
+        <Link to="/" className="text-white text-2xl font-bold">
+          Shandar Mobile
         </Link>
 
         <div className="flex items-center space-x-4">
@@ -19,7 +19,7 @@ const Navbar = () => {
           >
             Home
           </NavLink>
-          
+
           <NavLink
             to="/cart"
             activeClassName="border-b-2 border-white"
@@ -27,7 +27,7 @@ const Navbar = () => {
           >
             Cart
           </NavLink>
-          
+
           <NavLink
             to="/track"
             activeClassName="border-b-2 border-white"

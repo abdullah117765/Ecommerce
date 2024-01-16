@@ -1,49 +1,50 @@
 // CartView.js
 
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import L1 from '../resources/L1.jpeg';
 import M1 from '../resources/M1.jpg';
-import {  useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+
 const CartView = () => {
+  const navigate = useNavigate();
+  const [cartItems, setCartItems] = useState([]);
 
-    const navigate = useNavigate();
+  useEffect(() => {
+    const fetchCartItems = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/cart/get');
+       
+        setCartItems(response.data);
+      } catch (error) {
+        console.error('Error fetching cart items:', error);
+      }
+    };
 
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Laptop A',
-      description: 'Powerful laptop with high-performance features.',
-      price: 1200,
-      image: L1,
-      quantity: 2,
-    },
-    {
-      id: 4,
-      name: 'Mobile X',
-      description: 'Feature-rich smartphone with a stunning display.',
-      price: 600,
-      image: M1,
-      quantity: 1,
-    },
-  ]);
+    fetchCartItems();
+  }, []);
 
   const calculateTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cartItems.reduce((total, item) => total + item.productId.price * item.quantity, 0);
   };
 
-  const handleQuantityChange = (productId, newQuantity) => {
-    setCartItems((prevItems) =>
-      prevItems.map((item) =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
-    );
+ 
+
+  const handleRemoveItem = async (productId) => {
+    try {
+      // Send request to remove the cart item by ID
+      await axios.delete(`http://localhost:3001/cart/remove/${productId}`);
+      
+      // Update the comparison to use the correct property (_id)
+      setCartItems((prevItems) => prevItems.filter((item) => item._id !== productId));
+      alert('Item removed from cart');
+    } catch (error) {
+      console.error('Error removing cart item:', error);
+    }
   };
 
-  const handleRemoveItem = (productId) => {
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
-  };
-
+  
   const gotohome = () => {
      
     navigate('/')
@@ -58,26 +59,21 @@ const CartView = () => {
       ) : (
         <div>
           {cartItems.map((item) => (
-            <div key={item.id} className="flex items-center border p-4 mb-4 rounded shadow">
-              <img src={item.image} alt={item.name} className="mr-4 rounded-md w-16 h-16 object-cover" />
+            <div key={item.productId.id} className="flex items-center border p-4 mb-4 rounded shadow">
+              <img src={item.image} alt={item.productId.name} className="mr-4 rounded-md w-16 h-16 object-cover" />
 
               <div>
-                <h3 className="text-lg font-semibold">{item.name}</h3>
-                <p className="text-gray-600">{item.description}</p>
-                <p className="text-gray-800 font-semibold">${item.price}</p>
+                <h3 className="text-lg font-semibold">{item.productId.name}</h3>
+                <p className="text-gray-600">{item.productId.description}</p>
+                <p className="text-gray-800 font-semibold">${item.productId.price}</p>
 
                 <div className="mt-4 flex items-center">
                   <label className="text-gray-800 font-semibold mr-2">Quantity:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={item.quantity}
-                    onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value, 10))}
-                    className="border rounded-md p-2 w-16"
-                  />
+                  <div className="border rounded-md p-2 w-16"> {item.quantity}</div>
+                    
+              
                   <button
-                    onClick={() => handleRemoveItem(item.id)}
+                    onClick={() => handleRemoveItem(item._id)}
                     className="text-red-500 ml-4 hover:text-red-700"
                   >
                     Remove

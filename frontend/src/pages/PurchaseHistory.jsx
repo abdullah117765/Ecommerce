@@ -1,95 +1,139 @@
-// PurchaseHistory.js
+// components/OrderDetails.js
 
-import React, { useState } from 'react';
-import L1 from '../resources/L1.jpeg';
-import M1 from '../resources/M1.jpg';
-const PurchaseHistory = () => {
-  const [purchaseHistory, setPurchaseHistory] = useState([
-    {
-      id: 1,
-      name: 'Laptop A',
-      price: 1200,
-      image: L1,
-      rating: null,
-      comment: '',
-    },
-    {
-      id: 2,
-      name: 'Mobile X',
-      price: 600,
-      image: M1,
-      rating: null,
-      comment: '',
-    },
-    
-  ]);
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-  const handleRatingChange = (productId, newRating) => {
-    setPurchaseHistory((prevHistory) =>
-      prevHistory.map((item) =>
-        item.id === productId ? { ...item, rating: newRating } : item
-      )
-    );
+const OrderDetails = () => {
+  const [orders, setOrders] = useState([]);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await axios.get('http://localhost:3001/order/purchasehistory');
+        setOrders(response.data);
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+      }
+    };
+
+    fetchOrders();
+  }, []);
+
+  const handleRatingChange = (event) => {
+    setRating(parseInt(event.target.value, 10));
   };
 
-  const handleCommentChange = (productId, newComment) => {
-    setPurchaseHistory((prevHistory) =>
-      prevHistory.map((item) =>
-        item.id === productId ? { ...item, comment: newComment } : item
-      )
-    );
+  const handleCommentChange = (event) => {
+    setComment(event.target.value);
+  };
+
+  const openRatingModal = (productId) => {
+    setSelectedProduct(productId);
+  };
+
+  const closeRatingModal = () => {
+    setSelectedProduct(null);
+    setRating(0);
+    setComment('');
+  };
+
+  const submitRatingAndComment = async () => {
+    try {
+      // Assuming you have the orderId available in the order object
+      const orderId = selectedProduct._id;
+
+      await axios.post('http://localhost:3001/order/addratingcomment', {
+        orderId :selectedProduct.orderId,
+        productId: selectedProduct.productId,
+        rating,
+        comment,
+      });
+
+      // Fetch updated orders after submitting the rating and comment
+      const response = await axios.get('http://localhost:3001/order/purchasehistory');
+      setOrders(response.data);
+
+      closeRatingModal();
+    } catch (error) {
+      console.error('Error submitting rating and comment:', error);
+    }
   };
 
   return (
-    <div className="container mx-auto my-8">
-      <h2 className="text-3xl font-semibold mb-8">Purchase History</h2>
+    <div className="p-8 space-y-8">
+      <h2 className="text-4xl font-bold mb-8">Order Details</h2>
 
-      {purchaseHistory.length === 0 ? (
-        <p>You haven't made any purchases yet.</p>
-      ) : (
-        <div>
-          {purchaseHistory.map((item) => (
-            <div key={item.id} className="flex items-center border p-4 mb-4 rounded shadow">
-              <img src={item.image} alt={item.name} className="mr-4 rounded-md w-24 h-24 object-cover" />
-
-              <div>
-                <h3 className="text-lg font-semibold">{item.name}</h3>
-                <p className="text-gray-800">${item.price}</p>
-
-                <div className="mt-4 flex items-center">
-                  <div className="flex items-center mr-4">
-                    <label className="text-gray-800 font-semibold mr-2">Rating:</label>
-                    <select
-                      value={item.rating || ''}
-                      onChange={(e) => handleRatingChange(item.id, e.target.value)}
-                      className="border rounded-md p-2"
-                    >
-                      <option value="">Select Rating</option>
-                      <option value="5">5 Stars</option>
-                      <option value="4">4 Stars</option>
-                      <option value="3">3 Stars</option>
-                      <option value="2">2 Stars</option>
-                      <option value="1">1 Star</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center">
-                    <label className="text-gray-800 font-semibold mr-2">Comment:</label>
-                    <textarea
-                      value={item.comment}
-                      onChange={(e) => handleCommentChange(item.id, e.target.value)}
-                      className="border rounded-md p-2 w-48"
-                      placeholder="Add your comment..."
-                    />
-                  </div>
+      {orders.map((order) => (
+        <div key={order._id} className="bg-white rounded-lg shadow-md p-6 space-y-4">
+          <h3 className="text-2xl font-semibold mb-2">Order #{order._id}</h3>
+          <ul className="space-y-2">
+            {order.items.map((item) => (
+              <li key={item._id} className="border-b pb-4">
+                <div className="flex justify-between items-center">
+                <h1 className="text-gray-600 font-semibold">Product Id: {item._id}</h1>
+                  <button
+                    className="bg-blue-500 text-white px-4 py-2 rounded"
+                    onClick={() => openRatingModal({ orderId: order._id, productId: item._id })}
+                  >
+                    Add Rating
+                  </button>
                 </div>
-              </div>
+                <p className="text-gray-600">Quantity: {item.quantity}</p>
+                <p className="text-gray-600">Price: ${item.price}</p>
+                <p className="text-gray-600">Rating: {item.rating}</p>
+                <p className="text-gray-600">Comment: {item.comment}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+
+      {/* Rating Modal */}
+      {selectedProduct && (
+        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-gray-800 bg-opacity-50">
+          <div className="bg-white p-8 rounded-md w-96">
+            <h2 className="text-2xl font-bold mb-4">Add Rating</h2>
+            <label className="block mb-4">
+              Rating:
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={rating}
+                onChange={handleRatingChange}
+                className="border p-3 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </label>
+            <label className="block mb-4">
+              Comment:
+              <textarea
+                value={comment}
+                onChange={handleCommentChange}
+                className="border p-3 w-full h-24 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </label>
+            <div className="flex justify-end">
+              <button
+                className="bg-blue-500 text-white px-4 py-2 rounded mr-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={submitRatingAndComment}
+              >
+                Submit
+              </button>
+              <button
+                className="bg-gray-500 text-white px-4 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={closeRatingModal}
+              >
+                Cancel
+              </button>
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>
   );
 };
 
-export default PurchaseHistory;
+export default OrderDetails;
